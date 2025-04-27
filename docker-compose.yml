@@ -1,0 +1,40 @@
+services:
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth-service
+    volumes:
+      - auth-data:/app/data
+    environment:
+      # Ensure JWT_SECRET is set in your environment or a .env file
+      - AUTH_PORT=8080
+      - AUTH_DB_PATH=/app/data/auth.db
+      - AUTH_JWT_SECRET=${JWT_SECRET} # This line reads from the .env file
+      - AUTH_ACCESS_TOKEN_EXPIRY=900
+      - AUTH_REFRESH_TOKEN_EXPIRY=604800
+      - AUTH_CLEANUP_INTERVAL=3600
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.25
+    container_name: nginx
+    ports:
+      # Map host port 80 to container port 80
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+volumes:
+  auth-data:
+    name: auth-data
+
+networks:
+  auth-network:
+    name: auth-network
+    driver: bridge
